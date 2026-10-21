@@ -294,6 +294,71 @@ def export_timetable_to_pdf(timetable_df, days, time_slots):
     return html
 
 # ---------------------------------------------------------
+# SMART NOTIFICATIONS ENGINE
+# ---------------------------------------------------------
+def generate_smart_notifications():
+    """Generate smart notifications based on assignments, attendance, and exams."""
+    notifications = []
+    today = datetime.now().date()
+
+    # Assignment due reminders
+    for _, row in st.session_state.assignment_data.iterrows():
+        if row["Status"] == "Pending":
+            try:
+                due_date = datetime.strptime(str(row["Due Date"]), "%Y-%m-%d").date()
+                days_left = (due_date - today).days
+                if 0 <= days_left <= 3:
+                    notifications.append({
+                        "type": "assignment",
+                        "title": f"📝 Assignment Due: {row['Assignment Title']}",
+                        "message": f"Due in {days_left} day(s) for {row['Subject']}",
+                        "priority": "high" if days_left <= 1 else "medium"
+                    })
+                elif days_left < 0:
+                    notifications.append({
+                        "type": "assignment",
+                        "title": f"⚠️ Overdue: {row['Assignment Title']}",
+                        "message": f"Was due on {row['Due Date']} for {row['Subject']}",
+                        "priority": "high"
+                    })
+            except:
+                pass
+
+    # Attendance warnings
+    for _, row in st.session_state.attendance_data.iterrows():
+        try:
+            attended = int(row["Classes Attended"])
+            total = int(row["Total Classes"])
+            if total > 0:
+                percentage = (attended / total) * 100
+                if percentage < 75:
+                    notifications.append({
+                        "type": "attendance",
+                        "title": f"⚠️ Low Attendance: {row['Subject']}",
+                        "message": f"Attendance at {percentage:.0f}% (below 75% threshold)",
+                        "priority": "high"
+                    })
+        except:
+            pass
+
+    # Exam reminders
+    for _, row in st.session_state.exam_data.iterrows():
+        try:
+            exam_date = datetime.strptime(str(row["Exam Date"]), "%Y-%m-%d").date()
+            days_left = (exam_date - today).days
+            if 0 <= days_left <= 3:
+                notifications.append({
+                    "type": "exam",
+                    "title": f"🎓 Exam: {row['Subject']}",
+                    "message": f"Exam on {row['Exam Date']} at {row['Time']} in {row['Room']}",
+                    "priority": row["Priority"].lower()
+                })
+        except:
+            pass
+
+    return notifications
+
+# ---------------------------------------------------------
 # 3. LOGIN & OTP REGISTRATION
 # ---------------------------------------------------------
 def login_page():
@@ -428,6 +493,11 @@ def main_app():
         st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
         st.rerun()
 
+    # Generate smart notifications
+    if "all_notifications" not in st.session_state:
+        st.session_state.all_notifications = generate_smart_notifications()
+    notif_count = len(st.session_state.all_notifications)
+
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🔐 PROFILE & SETTINGS")
 
@@ -450,6 +520,19 @@ def main_app():
                 st.error("Please fill all fields.")
 
     st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🔔 SMART NOTIFICATIONS")
+    if notif_count > 0:
+        for n in st.session_state.all_notifications:
+            pri_color = {"high": "#ff4757", "medium": "#ffa502", "low": "#2ed573"}.get(n["priority"], "#2ed573")
+            st.sidebar.markdown(f"""
+            <div class="glass-card" style="margin: 8px 0; padding: 12px; border-left: 4px solid {pri_color};">
+                <div style="font-weight: 600; color: #00f3ff;">{n['title']}</div>
+                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.8); margin-top: 2px;">{n['message']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.sidebar.info("✅ All clear - no notifications!")
+
 
     shift_mode = st.sidebar.radio("⏰ OPERATING SHIFT", ["Morning Shift (9 AM - 4 PM)", "Afternoon Shift (11 AM - 6 PM)"], disabled=is_student)
 
@@ -475,6 +558,12 @@ def main_app():
         <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.7);">Glassmorphism UI • Smart Features • Student Management</p>
     </div>
     """, unsafe_allow_html=True)
+
+    # Notification bell
+    if notif_count > 0:
+        st.warning(f"𔔧 {notif_count} Smart Notification(s) - Check sidebar for details!")
+    else:
+        st.info("✅ No pending notifications. All good!")
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📋 Subject Setup", "🗓️ AI Timetable Matrix", "📊 Workload Analytics", "✅ Attendance Tracker", "📝 Assignment Hub", "🎓 Exam Schedule"
