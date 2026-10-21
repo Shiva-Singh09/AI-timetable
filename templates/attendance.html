@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Attendance</title>
+
+<link rel="stylesheet"
+href="{{url_for('static',filename='style.css')}}">
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>Attendance Tracker</h2>
+
+<form method="POST">
+
+<input
+name="subject"
+placeholder="Subject"
+required>
+
+<input
+name="attended"
+type="number"
+placeholder="Classes Attended"
+required>
+
+<input
+name="total"
+type="number"
+placeholder="Total Classes"
+required>
+
+<button>Add</button>
+
+</form>
+
+<hr>
+
+<table border="1">
+
+<tr>
+
+<th>Subject</th>
+
+<th>Attendance</th>
+
+<th>%</th>
+
+</tr>
+
+{% for a in data %}
+
+<tr>
+
+<td>{{a.subject}}</td>
+
+<td>{{a.attended}}/{{a.total}}</td>
+
+<td>
+
+{{ "%.2f"|format((a.attended/a.total)*100) }} %
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br>
+
+<a href="/dashboard">Dashboard</a>
+
+</div>
+
+</body>
+
+</html>

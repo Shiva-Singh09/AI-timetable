@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Timetable</title>
+
+<link rel="stylesheet"
+href="{{url_for('static',filename='style.css')}}">
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>
+
+Student Timetable
+
+</h2>
+
+<form method="POST">
+
+<input
+type="text"
+name="subject"
+placeholder="Subject"
+required>
+
+<input
+type="text"
+name="day"
+placeholder="Day"
+required>
+
+<input
+type="time"
+name="start"
+required>
+
+<input
+type="time"
+name="end"
+required>
+
+<input
+type="text"
+name="room"
+placeholder="Room"
+required>
+
+<button>
+
+Add Subject
+
+</button>
+
+</form>
+
+<hr>
+
+<table border="1" width="100%">
+
+<tr>
+
+<th>Subject</th>
+
+<th>Day</th>
+
+<th>Time</th>
+
+<th>Room</th>
+
+<th>Delete</th>
+
+</tr>
+
+{% for i in data %}
+
+<tr>
+
+<td>{{i.subject}}</td>
+
+<td>{{i.day}}</td>
+
+<td>{{i.start_time}} - {{i.end_time}}</td>
+
+<td>{{i.room}}</td>
+
+<td>
+
+<a href="/delete/{{i.id}}">
+
+Delete
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br>
+
+<a href="/dashboard">
+
+Dashboard
+
+</a>
+
+</div>
+
+</body>
+
+</html>

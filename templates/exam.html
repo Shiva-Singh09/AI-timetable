@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Exam Schedule</title>
+
+<link rel="stylesheet"
+href="{{url_for('static',filename='style.css')}}">
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>Exam Schedule</h2>
+
+<form method="POST">
+
+<input
+name="subject"
+placeholder="Subject"
+required>
+
+<input
+type="date"
+name="date"
+required>
+
+<input
+type="time"
+name="time"
+required>
+
+<input
+name="room"
+placeholder="Room"
+required>
+
+<button>Add Exam</button>
+
+</form>
+
+<hr>
+
+<table border="1">
+
+<tr>
+
+<th>Subject</th>
+
+<th>Date</th>
+
+<th>Time</th>
+
+<th>Room</th>
+
+<th>Delete</th>
+
+</tr>
+
+{% for e in exams %}
+
+<tr>
+
+<td>{{e.subject}}</td>
+
+<td>{{e.exam_date}}</td>
+
+<td>{{e.exam_time}}</td>
+
+<td>{{e.room}}</td>
+
+<td>
+
+<a href="/delete_exam/{{e.id}}">
+
+Delete
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br>
+
+<a href="/dashboard">
+
+Dashboard
+
+</a>
+
+</div>
+
+</body>
+
+</html>

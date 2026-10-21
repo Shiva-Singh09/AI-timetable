@@ -1,0 +1,27 @@
+# Python
+
+__pycache__/
+*.py[cod]
+*.class
+
+# Virtual Environment
+venv/
+.venv/
+ENV/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+instance/*.db
+*.sqlite3

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Assignments</title>
+
+<link rel="stylesheet"
+href="{{url_for('static',filename='style.css')}}">
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>Assignment Manager</h2>
+
+<form method="POST">
+
+<input
+type="text"
+name="subject"
+placeholder="Subject"
+required>
+
+<input
+type="text"
+name="title"
+placeholder="Assignment Title"
+required>
+
+<input
+type="date"
+name="due"
+required>
+
+<button>Add Assignment</button>
+
+</form>
+
+<hr>
+
+<table border="1" width="100%">
+
+<tr>
+
+<th>Subject</th>
+
+<th>Title</th>
+
+<th>Due Date</th>
+
+<th>Status</th>
+
+<th>Action</th>
+
+</tr>
+
+{% for a in data %}
+
+<tr>
+
+<td>{{a.subject}}</td>
+
+<td>{{a.title}}</td>
+
+<td>{{a.due_date}}</td>
+
+<td>{{a.status}}</td>
+
+<td>
+
+<a href="/complete_assignment/{{a.id}}">
+Complete
+</a>
+
+|
+
+<a href="/delete_assignment/{{a.id}}">
+Delete
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br>
+
+<a href="/dashboard">
+
+Dashboard
+
+</a>
+
+</div>
+
+</body>
+
+</html>

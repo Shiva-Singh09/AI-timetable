@@ -1,0 +1,18 @@
+{
+    "admin": {
+        "password": "admin123",
+        "name": "Admin User",
+        "role": "Faculty Leader"
+    },
+    "Kamal04": {
+        "password": "Kamal@123",
+        "name": "Kamal Kishor Tiwari",
+        "role": "Student"
+    },
+    "Kamal08": {
+        "password": "Kamal@321",
+        "name": "Kamal Kishor Tiwarii",
+        "role": "Faculty Member",
+        "email": "kamalkishortiwari412008@gmail.com"
+    }
+}
