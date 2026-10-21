@@ -13,8 +13,12 @@ import io
 # ---------------------------------------------------------
 # EMAIL CONFIGURATION
 # ---------------------------------------------------------
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", st.secrets.get("SENDER_EMAIL", ""))
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", st.secrets.get("SENDER_PASSWORD", ""))
+try:
+    SENDER_EMAIL = os.getenv("SENDER_EMAIL", st.secrets.get("SENDER_EMAIL", ""))
+    SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", st.secrets.get("SENDER_PASSWORD", ""))
+except Exception:
+    SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
+    SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "")
 
 def send_otp_email(receiver_email, otp_code):
     try:
@@ -97,6 +101,12 @@ if "notifications" not in st.session_state:
     st.session_state.notifications = []
 if "theme" not in st.session_state:
     st.session_state.theme = "dark"
+if "auth_mode" not in st.session_state:
+    st.session_state.auth_mode = "login"  # login | register | forgot | reset
+if "reset_otp" not in st.session_state:
+    st.session_state.reset_otp = None
+if "reset_email" not in st.session_state:
+    st.session_state.reset_email = ""
 
 LOGIN_BG_IMAGE = "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1920&auto=format&fit=crop"
 DASHBOARD_BG_IMAGE = "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1920&auto=format&fit=crop"
@@ -106,33 +116,82 @@ DASHBOARD_BG_IMAGE = "https://images.unsplash.com/photo-1555066931-4365d14bab8c?
 # ---------------------------------------------------------
 GLASSMORPHISM_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+body {
+    background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    color: #f1f5f9;
+    font-family: 'Inter', sans-serif;
+}
+
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.neon-text {
+    color: #00f3ff;
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.6), 0 0 20px rgba(0, 243, 255, 0.4);
+    font-weight: 800;
+}
+
 .glass-card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 24px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
 }
+.glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.glass-card:hover::before { opacity: 1; }
 .glass-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-6px) scale(1.02);
     border-color: rgba(0, 243, 255, 0.4);
-    box-shadow: 0 12px 40px rgba(0, 243, 255, 0.15);
+    box-shadow: 0 16px 48px rgba(0, 243, 255, 0.2);
 }
+
 .login-glass-card {
-    background: rgba(255, 255, 255, 0.07);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 24px;
-    padding: 40px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    max-width: 420px;
-    margin: 0 auto;
+    border-radius: 28px;
+    padding: 48px 40px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+    max-width: 440px;
+    margin: 40px auto;
+    position: relative;
 }
+.login-glass-card::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(0,243,255,0.08) 0%, transparent 60%);
+    animation: pulseGlow 8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+@keyframes pulseGlow {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.3); opacity: 0.8; }
+}
+
 .dashboard-glass {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(20px);
@@ -144,55 +203,167 @@ GLASSMORPHISM_CSS = """
 }
 .metric-glass-card {
     background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 18px;
+    padding: 24px;
     text-align: center;
+    transition: all 0.3s ease;
 }
-.metric-glass-card h3 { color: #00f3ff; margin: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
-.metric-glass-card .value { font-size: 2rem; font-weight: 800; color: #ffffff; margin: 8px 0 0 0; }
+.metric-glass-card:hover {
+    border-color: rgba(0, 243, 255, 0.4);
+    transform: translateY(-4px);
+}
+.metric-glass-card h3 { color: #00f3ff; margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
+.metric-glass-card .value { font-size: 2.2rem; font-weight: 800; color: #ffffff; margin: 10px 0 0 0; }
+
 div[data-testid="stSidebar"] {
-    background: rgba(15, 23, 42, 0.82) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
+
 .stTabs [data-baseweb="tab-list"] {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
-    border-radius: 12px;
-    padding: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    border-radius: 14px;
+    padding: 6px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 .stTabs [data-baseweb="tab"] {
     background: transparent !important;
-    color: rgba(255, 255, 255, 0.7) !important;
-    border-radius: 8px !important;
-    padding: 12px 24px !important;
+    color: rgba(255, 255, 255, 0.65) !important;
+    border-radius: 10px !important;
+    padding: 14px 28px !important;
+    transition: all 0.3s ease;
+    font-weight: 500;
 }
 .stTabs [aria-selected="true"] {
-    background: rgba(0, 243, 255, 0.15) !important;
+    background: rgba(0, 243, 255, 0.18) !important;
     color: #00f3ff !important;
-    border: 1px solid rgba(0, 243, 255, 0.3) !important;
+    border: 1px solid rgba(0, 243, 255, 0.35) !important;
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
 }
+
 .stDataFrame {
     background: rgba(255, 255, 255, 0.03) !important;
-    backdrop-filter: blur(12px);
-    border-radius: 12px !important;
+    backdrop-filter: blur(14px);
+    border-radius: 14px !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
+
 .exam-card {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 14px;
-    padding: 16px;
-    margin: 10px 0;
-    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 12px 0;
+    backdrop-filter: blur(14px);
+    transition: all 0.3s ease;
 }
-.exam-high { border-left: 4px solid #ff4757; }
-.exam-medium { border-left: 4px solid #ffa502; }
-.exam-low { border-left: 4px solid #2ed573; }
+.exam-card:hover {
+    transform: translateX(6px);
+    border-color: rgba(0, 243, 255, 0.3);
+}
+.exam-high { border-left: 5px solid #ff4757; }
+.exam-medium { border-left: 5px solid #ffa502; }
+.exam-low { border-left: 5px solid #2ed573; }
+
+.stButton > button {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+.stButton > button:hover {
+    background: rgba(0, 243, 255, 0.2);
+    border-color: rgba(0, 243, 255, 0.5);
+    color: #00f3ff;
+    box-shadow: 0 0 24px rgba(0, 243, 255, 0.3);
+    transform: translateY(-2px);
+}
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #00f3ff 0%, #312e81 100%);
+    border: none;
+    color: #ffffff;
+}
+.stButton > button[kind="primary"]:hover {
+    background: linear-gradient(135deg, #00f3ff 0%, #1e1b4b 100%);
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.4);
+}
+
+.stTextInput input, .stTextArea textarea, .stSelectbox select, .stPassword input {
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 10px !important;
+    color: #ffffff !important;
+    padding: 12px 16px !important;
+    font-family: 'Inter', sans-serif;
+}
+.stTextInput input:focus, .stTextArea textarea:focus, .stSelectbox select:focus {
+    border-color: rgba(0, 243, 255, 0.5) !important;
+    box-shadow: 0 0 16px rgba(0, 243, 255, 0.15) !important;
+}
+
+.stTextInput label, .stPassword label, .stSelectbox label {
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+}
+
+.stDivider { margin: 24px 0; border-color: rgba(255, 255, 255, 0.1); }
+
+div[data-baseweb="notification"] {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+}
+
+.floating-deco {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+}
+.deco-blur {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.4;
+    animation: floatDeco 12s ease-in-out infinite;
+}
+.deco-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #00f3ff; animation-delay: 0s; }
+.deco-2 { bottom: -10%; right: -10%; width: 600px; height: 600px; background: #7209b7; animation-delay: -4s; }
+.deco-3 { top: 30%; right: -15%; width: 400px; height: 400px; background: #f72585; animation-delay: -8s; }
+@keyframes floatDeco {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(30px, -30px) scale(1.1); }
+}
+
+.stSuccess, .stError, .stWarning, .stInfo {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+}
+
+.section-header {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #00f3ff;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 </style>
 """
 
@@ -370,55 +541,172 @@ def generate_smart_notifications():
 # ---------------------------------------------------------
 def login_page():
     st.markdown(GLASSMORPHISM_CSS, unsafe_allow_html=True)
+
+    # Floating decorative background
+    st.markdown("""
+    <div class="floating-deco">
+        <div class="deco-blur deco-1"></div>
+        <div class="deco-blur deco-2"></div>
+        <div class="deco-blur deco-3"></div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown(f"""
-        <style>
-        .stApp {{
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
-            background-size: cover; background-position: center; background-attachment: fixed; color: #f1f5f9;
-        }}
-        </style>
+    <style>
+    .stApp {{
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+        background-size: cover; background-position: center; background-attachment: fixed; color: #f1f5f9;
+    }}
+    </style>
     """, unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
         st.markdown("""
-        <div class="login-glass-card">
-            <div style="text-align: center; margin-bottom: 32px;">
-                <div style="font-family: 'Courier New', monospace; font-size: 2.5rem; font-weight: 800; color: #00f3ff;">⚡ AI TIMETABLE</div>
-                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">Secure Access Portal</div>
+        <div class="login-glass-card" style="position: relative; z-index: 1;">
+            <div style="text-align: center; margin-bottom: 32px; position: relative; z-index: 1;">
+                <div class="neon-text" style="font-family: 'Courier New', monospace; font-size: 2.5rem; font-weight: 800;">⚡ AI TIMETABLE</div>
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-top: 6px;">Secure Access Portal</div>
             </div>
         """, unsafe_allow_html=True)
 
-        auth_mode = st.radio("Access Level", ["🔐 LOGIN", "📝 REGISTER SYSTEM"], horizontal=True)
+        mode = st.session_state.auth_mode
 
-        if auth_mode == "🔐 LOGIN":
-            username = st.text_input("👤 USER IDENTIFIER", placeholder="Enter your username")
-            password = st.text_input("🔑 PASSCODE", type="password", placeholder="Enter your password")
+        # ── LOGIN MODE ──
+        if mode == "login":
+            st.markdown('<div class="section-header">🔐 Sign In</div>', unsafe_allow_html=True)
 
-            if st.button("🚀 INITIALIZE LOGIN", use_container_width=True, type="primary"):
+            username = st.text_input("👤 USER IDENTIFIER", placeholder="Enter your username", key="login_user")
+            password = st.text_input("🔑 PASSCODE", type="password", placeholder="Enter your password", key="login_pass")
+
+            col_btn, col_forgot = st.columns([3, 2])
+            with col_btn:
+                if st.button("🚀 INITIALIZE LOGIN", use_container_width=True, type="primary", key="btn_login"):
+                    users = st.session_state.users_db
+                    if username in users and users[username]["password"] == password:
+                        st.session_state.authenticated = True
+                        st.session_state.user_info = {
+                            "username": username,
+                            "name": users[username].get("name", username),
+                            "role": users[username].get("role", "Student"),
+                            "email": users[username].get("email", "N/A")
+                        }
+                        st.session_state.auth_mode = "login"
+                        st.success("✅ AUTHENTICATION SUCCESSFUL")
+                        st.rerun()
+                    else:
+                        st.error("❌ ACCESS DENIED: Invalid Credentials")
+            with col_forgot:
+                if st.button("🔑 Forgot Password?", use_container_width=True, key="btn_forgot"):
+                    st.session_state.auth_mode = "forgot"
+                    st.rerun()
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown('<div style="text-align: center; color: rgba(255,255,255,0.5); font-size: 0.85rem;">New here?</div>', unsafe_allow_html=True)
+            if st.button("📝 Create Account → REGISTER", use_container_width=True, key="btn_register_from_login"):
+                st.session_state.auth_mode = "register"
+                st.rerun()
+
+        # ── FORGOT PASSWORD MODE (Step 1: Email) ──
+        elif mode == "forgot":
+            st.markdown('<div class="section-header">🔑 Reset Password</div>', unsafe_allow_html=True)
+            st.markdown('<div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 20px;">Enter your registered email to receive a reset OTP.</div>', unsafe_allow_html=True)
+
+            reset_email = st.text_input("📧 REGISTERED EMAIL", placeholder="name@example.com", key="forgot_email")
+
+            if st.button("📤 SEND RESET OTP", use_container_width=True, type="primary", key="btn_send_reset_otp"):
                 users = st.session_state.users_db
-                if username in users and users[username]["password"] == password:
-                    st.session_state.authenticated = True
-                    st.session_state.user_info = {
-                        "username": username,
-                        "name": users[username].get("name", username),
-                        "role": users[username].get("role", "Student"),
-                        "email": users[username].get("email", "N/A")
-                    }
-                    st.success("✅ AUTHENTICATION SUCCESSFUL")
+                found_user = None
+                for uname, udata in users.items():
+                    if udata.get("email", "").lower() == reset_email.lower():
+                        found_user = uname
+                        break
+                if found_user:
+                    otp = str(random.randint(100000, 999999))
+                    with st.spinner("📤 Sending reset OTP..."):
+                        if send_otp_email(reset_email, otp):
+                            st.session_state.reset_otp = otp
+                            st.session_state.reset_email = reset_email
+                            st.session_state.reset_username = found_user
+                            st.session_state.auth_mode = "reset_otp"
+                            st.success(f"✅ Reset OTP sent to {reset_email}!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Failed to send email. Please try again.")
+                else:
+                    st.error("❌ No account found with this email.")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("← Back to Sign In", use_container_width=True, key="btn_back_login_from_forgot"):
+                st.session_state.auth_mode = "login"
+                st.rerun()
+
+        # ── FORGOT PASSWORD MODE (Step 2: Verify OTP) ──
+        elif mode == "reset_otp":
+            st.markdown('<div class="section-header">🔑 Verify OTP</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 20px;">An OTP has been sent to <b>{st.session_state.reset_email}</b>. Enter it below.</div>', unsafe_allow_html=True)
+
+            entered_otp = st.text_input("🔑 ENTER 6-DIGIT OTP", placeholder="123456", key="reset_otp_input")
+
+            if st.button("✨ VERIFY OTP", use_container_width=True, type="primary", key="btn_verify_reset_otp"):
+                if entered_otp == st.session_state.reset_otp:
+                    st.session_state.auth_mode = "reset_pwd"
+                    st.success("✅ OTP Verified! Create your new password.")
                     st.rerun()
                 else:
-                    st.error("❌ ACCESS DENIED: Invalid Credentials")
+                    st.error("❌ Invalid OTP. Please try again.")
 
-        else:
-            new_name = st.text_input("👤 FULL NAME", placeholder="Enter your full name")
-            new_email = st.text_input("📧 EMAIL ADDRESS", placeholder="name@example.com")
-            new_username = st.text_input("🆔 NEW USERNAME", placeholder="Choose a username")
-            new_password = st.text_input("🔑 NEW PASSCODE", type="password", placeholder="Create a password")
-            role = st.selectbox("🎯 ASSIGN ROLE", ["Student", "Faculty Member", "Administrator"])
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("← Back to Email", use_container_width=True, key="btn_back_forgot_from_otp"):
+                st.session_state.auth_mode = "forgot"
+                st.rerun()
 
-            if st.button("📧 SEND VERIFICATION OTP", use_container_width=True, type="primary"):
+        # ── FORGOT PASSWORD MODE (Step 3: New Password) ──
+        elif mode == "reset_pwd":
+            st.markdown('<div class="section-header">🔒 New Password</div>', unsafe_allow_html=True)
+            st.markdown('<div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 20px;">Set a new password for your account.</div>', unsafe_allow_html=True)
+
+            new_pwd = st.text_input("🔑 NEW PASSCODE", type="password", placeholder="Create a new password", key="reset_new_pwd")
+            confirm_pwd = st.text_input("🔑 CONFIRM PASSCODE", type="password", placeholder="Confirm your new password", key="reset_confirm_pwd")
+
+            if st.button("💾 UPDATE PASSWORD", use_container_width=True, type="primary", key="btn_update_reset_pwd"):
+                if not new_pwd or not confirm_pwd:
+                    st.error("Please fill in both fields.")
+                elif new_pwd != confirm_pwd:
+                    st.error("Passwords do not match.")
+                elif len(new_pwd) < 4:
+                    st.error("Password must be at least 4 characters.")
+                else:
+                    username = st.session_state.get("reset_username", "")
+                    if username and username in st.session_state.users_db:
+                        st.session_state.users_db[username]["password"] = new_pwd
+                        save_users(st.session_state.users_db)
+                        st.session_state.reset_otp = None
+                        st.session_state.reset_email = ""
+                        st.session_state.reset_username = ""
+                        st.session_state.auth_mode = "login"
+                        st.success("✅ Password updated successfully! You can now sign in.")
+                        st.rerun()
+                    else:
+                        st.error("❌ Session expired. Please start over.")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("← Back to Sign In", use_container_width=True, key="btn_back_login_from_reset"):
+                st.session_state.auth_mode = "login"
+                st.rerun()
+
+        # ── REGISTER MODE ──
+        elif mode == "register":
+            st.markdown('<div class="section-header">📝 Create Account</div>', unsafe_allow_html=True)
+
+            new_name = st.text_input("👤 FULL NAME", placeholder="Enter your full name", key="reg_name")
+            new_email = st.text_input("📧 EMAIL ADDRESS", placeholder="name@example.com", key="reg_email")
+            new_username = st.text_input("🆔 NEW USERNAME", placeholder="Choose a username", key="reg_user")
+            new_password = st.text_input("🔑 NEW PASSCODE", type="password", placeholder="Create a password", key="reg_pass")
+            role = st.selectbox("🎯 ASSIGN ROLE", ["Student", "Faculty Member", "Administrator"], key="reg_role")
+
+            if st.button("📧 SEND VERIFICATION OTP", use_container_width=True, type="primary", key="btn_send_reg_otp"):
                 if new_username in st.session_state.users_db:
                     st.warning("⚠️ USERNAME ALREADY EXISTS")
                 elif new_email and new_username and new_password and "@" in new_email:
@@ -436,8 +724,8 @@ def login_page():
 
             if st.session_state.generated_otp:
                 st.divider()
-                entered_otp = st.text_input("🔑 ENTER 6-DIGIT OTP", placeholder="123456")
-                if st.button("✨ VERIFY & CREATE ACCOUNT", use_container_width=True, type="primary"):
+                entered_otp = st.text_input("🔑 ENTER 6-DIGIT OTP", placeholder="123456", key="reg_otp_input")
+                if st.button("✨ VERIFY & CREATE ACCOUNT", use_container_width=True, type="primary", key="btn_verify_reg_otp"):
                     if entered_otp == st.session_state.generated_otp:
                         temp = st.session_state.temp_user_data
                         st.session_state.users_db[temp["username"]] = {
@@ -447,9 +735,16 @@ def login_page():
                         save_users(st.session_state.users_db)
                         st.session_state.generated_otp = None
                         st.session_state.temp_user_data = {}
+                        st.session_state.auth_mode = "login"
                         st.success("🎉 EMAIL VERIFIED & USER REGISTERED SUCCESSFULLY!")
+                        st.rerun()
                     else:
                         st.error("❌ INVALID OTP.")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("← Already have an account? Sign In", use_container_width=True, key="btn_back_login_from_register"):
+                st.session_state.auth_mode = "login"
+                st.rerun()
 
         st.markdown("</div>", unsafe_allow_html=True)
 
