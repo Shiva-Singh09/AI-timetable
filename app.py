@@ -331,7 +331,8 @@ def login_page():
                     st.session_state.user_info = {
                         "username": username,
                         "name": users[username].get("name", username),
-                        "role": users[username].get("role", "Student")
+                        "role": users[username].get("role", "Student"),
+                        "email": users[username].get("email", "N/A")
                     }
                     st.success("✅ AUTHENTICATION SUCCESSFUL")
                     st.rerun()
@@ -408,8 +409,9 @@ def main_app():
         <div style="color: #00f3ff; font-weight: 700;">👤 OPERATOR</div>
         <div style="font-size: 1.1rem; font-weight: 600; margin: 4px 0;">{name}</div>
         <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">{role}</div>
+        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-top: 4px;">{email}</div>
     </div>
-    """.format(name=st.session_state.user_info.get('name', 'User'), role=user_role), unsafe_allow_html=True)
+    """.format(name=st.session_state.user_info.get('name', 'User'), role=user_role, email=st.session_state.user_info.get('email', 'N/A')), unsafe_allow_html=True)
 
     if st.sidebar.button("🔴 TERMINATE SESSION", use_container_width=True):
         st.session_state.authenticated = False
@@ -425,6 +427,27 @@ def main_app():
     if st.sidebar.button(theme_label, use_container_width=True):
         st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
         st.rerun()
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🔐 PROFILE & SETTINGS")
+
+    with st.sidebar.expander("🔑 Change Password", expanded=False):
+        old_pwd = st.text_input("Current Password", type="password", key="old_pwd")
+        new_pwd = st.text_input("New Password", type="password", key="new_pwd")
+        confirm_pwd = st.text_input("Confirm Password", type="password", key="confirm_pwd")
+        if st.button("💾 Update Password", use_container_width=True, key="change_pwd_btn"):
+            username = st.session_state.user_info.get("username", "")
+            if old_pwd and new_pwd and confirm_pwd:
+                if new_pwd != confirm_pwd:
+                    st.error("❌ New passwords do not match!")
+                elif username in st.session_state.users_db and st.session_state.users_db[username]["password"] != old_pwd:
+                    st.error("❌ Current password is incorrect!")
+                else:
+                    st.session_state.users_db[username]["password"] = new_pwd
+                    save_users(st.session_state.users_db)
+                    st.success("✅ Password updated successfully!")
+            else:
+                st.error("Please fill all fields.")
 
     st.sidebar.markdown("---")
 
