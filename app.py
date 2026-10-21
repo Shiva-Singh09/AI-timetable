@@ -199,6 +199,13 @@ div[data-testid="stSidebar"] {
 # ---------------------------------------------------------
 # 2. TIMETABLE AGENT ENGINE
 # ---------------------------------------------------------
+@st.cache_data
+def generate_timetable_cached(subjects_tuple, days_tuple, time_slots_tuple, lunch_slot, max_classes, avoid_consecutive):
+    """Cached timetable generation for performance optimization."""
+    subjects_info = [{"name": s[0], "teacher": s[1], "room": s[2], "credits": s[3]} for s in subjects_tuple]
+    agent = TimetableAgent(list(days_tuple), list(time_slots_tuple), lunch_slot=lunch_slot)
+    return agent.generate_timetable(subjects_info, max_classes_per_day=max_classes, avoid_consecutive=avoid_consecutive)
+
 class TimetableAgent:
     def __init__(self, days, time_slots, lunch_slot="12:00 PM - 01:00 PM"):
         self.days = days
@@ -616,14 +623,21 @@ def main_app():
 
         if not is_student:
             if st.button("🚀 GENERATE AI SCHEDULE", type="primary", use_container_width=True):
-                subjects_info = [
-                    {"name": str(r["Subject"]), "teacher": str(r["Teacher"]), "room": str(r.get("Room/Lab", "Room 101")), "credits": int(r["Weekly Classes (Credits)"])}
-                    for r in subjects_list
-                ]
-                agent = TimetableAgent(days, time_slots, lunch_slot=lunch_break_slot)
-                timetable_df = agent.generate_timetable(subjects_info, max_classes_per_day=max_classes, avoid_consecutive=avoid_consecutive)
-                st.session_state["timetable_df"] = timetable_df
-                st.toast("🎉 AI Timetable Generated!")
+                with st.spinner("🤖 AI is generating your timetable..."):
+                    subjects_info_tuples = [
+                        (str(r["Subject"]), str(r["Teacher"]), str(r.get("Room/Lab", "Room 101")), int(r["Weekly Classes (Credits)"]))
+                        for r in subjects_list
+                    ]
+                    timetable_df = generate_timetable_cached(
+                        tuple(subjects_info_tuples),
+                        tuple(days),
+                        tuple(time_slots),
+                        lunch_break_slot,
+                        max_classes,
+                        avoid_consecutive
+                    )
+                    st.session_state["timetable_df"] = timetable_df
+                    st.toast("🎉 AI Timetable Generated!")
         st.markdown('</div>', unsafe_allow_html=True)
 
     with tab2:
