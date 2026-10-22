@@ -1014,7 +1014,6 @@ def main_app():
                     if not any(x in val for x in ["Free", "Self Study", "Library", "LUNCH"]):
                         count += 1
                 daily_counts[day] = count
-            import pandas as pd
             chart_df = pd.DataFrame(list(daily_counts.items()), columns=["Day", "Classes"])
             st.bar_chart(chart_df.set_index("Day"))
 
